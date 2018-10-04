@@ -1,9 +1,10 @@
 #---------------------------------------------------------------------------------
 # 
-# Name: portscan.py
+# Name: pyscan.py
 # Description: Improved version of nmap.py with increased functionality
 # Date: Octover 3, 2018
 # Author: Chandler Taylor
+# Github: https://github.com/chandama/IT567.git
 # Sources: https://www.phillips321.co.uk/2014/08/12/python-port-scanner-nmap-py/
 #	https://stackoverflow.com/questions/29011455/python-script-for-traceroute
 #	-and-printing-the-output-in-file-shows-error-oserro
