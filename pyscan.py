@@ -89,7 +89,7 @@ def main():
     print'\n\n','-'*60,'\nSCAN RESULTS\n'
     print'Hosts scanned:',len(targets)
     print'Hosts active:',aliveHosts
-    print'Ports scanned:',len(ports)*len(targets)
+    print'Ports scanned:',len(ports)*aliveHosts
     print'Open ports:',openPorts
     print'-'*60
 
