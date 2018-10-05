@@ -152,7 +152,6 @@ def UDPscan(ports,target,t1):
 
 
 def ICMPscan(target,reply):
-
 	try:
 		icmp = subprocess.Popen(["ping", target, '-n', '1', '-w', '1'],stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		for line in iter(icmp.stdout.readline,""):
