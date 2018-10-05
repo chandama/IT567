@@ -5,9 +5,11 @@
 # Date: Octover 3, 2018
 # Author: Chandler Taylor
 # Github: https://github.com/chandama/IT567.git
-# Sources: https://www.phillips321.co.uk/2014/08/12/python-port-scanner-nmap-py/
+# Sources: 
+#	https://www.phillips321.co.uk/2014/08/12/python-port-scanner-nmap-py/
 #	https://stackoverflow.com/questions/29011455/python-script-for-traceroute
-#	-and-printing-the-output-in-file-shows-error-oserro
+#		-and-printing-the-output-in-file-shows-error-oserro
+#	https://gist.github.com/amitsaha/8879445
 #
 #---------------------------------------------------------------------------------
 
@@ -18,7 +20,7 @@ import sys
 import argparse
 from datetime import datetime
 try:
-	from scapy.all import send, IP, TCP, UDP, Raw, sr
+	from scapy.all import *
 except:
 	pass
 
@@ -62,11 +64,11 @@ def main():
     for target in targets:
         #Scan start time
         t1 = datetime.now()
-
+        reply = 0
         #First check that host is active performing a quick preliminary ICMPscan
         #before running the other scans and filling the screen with empty scan results
         #If ICMPscan returns 0, report inactive host and move on to next target
-        if ICMPscan(target) == 1:
+        if ICMPscan(target,reply)==1:
         	aliveHosts+=1
 	        if args.tcpscan:
 	    		openPorts+=TCPscan(ports,target,t1)
@@ -77,7 +79,7 @@ def main():
     	else:
     		print target,"is down"
         if args.icmpscan:
-        	if ICMPscan(target) == 1:
+        	if ICMPscan(target,reply) == 1:
         		aliveHosts+=1
         		print target,"is up"
 
@@ -89,8 +91,9 @@ def main():
     print'\n\n','-'*60,'\nSCAN RESULTS\n'
     print'Hosts scanned:',len(targets)
     print'Hosts active:',aliveHosts
-    print'Ports scanned:',len(ports)*aliveHosts
-    print'Open ports:',openPorts
+    if args.tcpscan or args.udpscan:
+	    print'Ports scanned:',len(ports)*aliveHosts
+	    print'Open ports:',openPorts
     print'-'*60
 
 def TCPscan(ports,target,t1):
@@ -135,41 +138,54 @@ def UDPscan(ports,target,t1):
 			print unans.summary()
 			#send(a)
 			#if UDP in a:
-			#   print a[UDP].dport
+			#	print a[UDP].dport
 			#print a.dport
     except KeyboardInterrupt:
         print"You pressed Ctrl+C"
         sys.exit()
-    except:
-    	print "******** UDP scan error, verify scapy installation ********"
-    	pass
+    except socket.gaierror:
+        print"Hostname coult not be resolved"
+        sys.exit()
+    except socket.error:
+        print"Exception: socket.error - Couldn't connect to server"
+        sys.exit()
 
-def ICMPscan(target):
+
+def ICMPscan(target,reply):
+
 	try:
-		icmp = subprocess.Popen(["ping", target, '-n', '1', '-w', '5'],stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		icmp = subprocess.Popen(["ping", target, '-n', '1', '-w', '1'],stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		for line in iter(icmp.stdout.readline,""):
 		    #print line
 		    if "Reply" in line:
 		    	#print target,"is up"
-		    	return 1
-	    	else:
-	    		return 0
+		    	reply = 1
 	except:
 		pass
-
+	try:
+		icmp = subprocess.Popen(["ping", target, '-c', '1', '-W', '1'],stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		for line in iter(icmp.stdout.readline,""):
+		    #print line
+		    if "1 received" in line:
+		    	#print target,"is up"
+		    	reply = 1
+	except:
+		pass
+	return reply
 def traceroute(target):
-	try:
-		traceroute = subprocess.Popen(["traceroute", '-w', '30',target],stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-		for line in iter(traceroute.stdout.readline,""):
-		    print line
-	except:
-		pass
-	try:
-		traceroute = subprocess.Popen(["tracert", '-w', '30',target],stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-		for line in iter(traceroute.stdout.readline,""):
-		    print line
-	except:
-		pass
+	#From: https://gist.github.com/amitsaha/8879445
+  	print'-'*60,'\nPerforming traceroute on',target,'\n','-'*60
+	ttl = 1
+	while 1:
+	    p=sr1(IP(dst=target,ttl=ttl)/ICMP(id=os.getpid()), 
+	          verbose=0)
+	    # if time exceeded due to TTL exceeded
+	    if p[ICMP].type == 11 and p[ICMP].code == 0:
+	        print ttl, '->', p.src
+	        ttl += 1
+	    elif p[ICMP].type == 0:
+	        print ttl, '->', p.src
+	        break
 
 # Functions for converting port/target ranges and CIDR subnet masks and parsing them
 def iprange(addressrange): # converts a ip range into a list
